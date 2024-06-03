@@ -48,3 +48,19 @@ class Property(PropertyBase):
 
     class Config:
         from_attributes = True
+
+class RequestBase(BaseModel):
+    guest_id: int
+    property_id: int
+    request_message: str
+    assignTo: Optional[int] = None
+    isDone: bool = False
+
+class RequestCreate(RequestBase):
+    pass
+
+class Request(RequestBase):
+    id: int
+
+    class Config:
+        orm_mode = True
