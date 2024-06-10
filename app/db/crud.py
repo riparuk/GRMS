@@ -94,3 +94,39 @@ def delete_task(db: Session, task_id: int):
         db.delete(db_task)
         db.commit()
     return db_task
+
+# CRUD operations for Request
+def get_request(db: Session, request_id: int):
+    return db.query(models.Request).filter(models.Request.id == request_id).first()
+
+def get_requests_by_property(db: Session, property_id: int):
+    return db.query(models.Request).filter(models.Request.property_id == property_id).all()
+
+def get_requests_by_staff(db: Session, staff_id: int):
+    return db.query(models.Request).filter(models.Request.assignTo == staff_id).all()
+
+def get_requests_by_guest(db: Session, guest_id: int):
+    return db.query(models.Request).filter(models.Request.guest_id == guest_id).all()
+
+def create_request(db: Session, request: schemas.RequestCreate):
+    db_request = models.Request(**request.dict())
+    db.add(db_request)
+    db.commit()
+    db.refresh(db_request)
+    return db_request
+
+def update_request_assign_to(db: Session, request_id: int, staff_id: int):
+    db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if db_request:
+        db_request.assignTo = staff_id
+        db.commit()
+        db.refresh(db_request)
+    return db_request
+
+def update_request_is_done(db: Session, request_id: int, is_done: bool):
+    db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if db_request:
+        db_request.isDone = is_done
+        db.commit()
+        db.refresh(db_request)
+    return db_request

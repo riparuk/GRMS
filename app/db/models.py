@@ -36,3 +36,14 @@ class Task(Base):
     description = Column(String, index=True)
 
     staff = relationship("Staff", secondary=staff_tasks, back_populates="tasks")
+
+
+class Request(Base):
+    __tablename__ = "requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    guest_id = Column(Integer, index=True)
+    property_id = Column(Integer, index=True)
+    request_message = Column(String, index=True)
+    assignTo = Column(Integer, index=True, nullable=True)
+    isDone = Column(Boolean, default=False)
