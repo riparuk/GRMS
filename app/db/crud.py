@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
+from typing import Optional
+from datetime import datetime
 
 # Property CRUD operations
 def get_property(db: Session, property_id: int):
@@ -130,3 +132,19 @@ def update_request_is_done(db: Session, request_id: int, is_done: bool):
         db.commit()
         db.refresh(db_request)
     return db_request
+
+def get_requests_filtered(db: Session, startDate: datetime, endDate: datetime, guestName: Optional[str], priority: Optional[str], progress: Optional[str]):
+    query = db.query(models.Request)
+    
+    if startDate:
+        query = query.filter(models.Request.timestamp >= startDate)
+    if endDate:
+        query = query.filter(models.Request.timestamp <= endDate)
+    if guestName:
+        query = query.filter(models.Request.guestName == guestName)
+    if priority:
+        query = query.filter(models.Request.priority == priority)
+    if progress:
+        query = query.filter(models.Request.progress == progress)
+    
+    return query.all()

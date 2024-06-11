@@ -9,6 +9,7 @@
 
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 
 class TaskBase(BaseModel):
     description: str
@@ -55,6 +56,21 @@ class RequestBase(BaseModel):
     request_message: str
     assignTo: Optional[int] = None
     isDone: bool = False
+
+       # New attributes
+    timestamp: datetime
+    guestName: str
+    description: str
+    actions: Optional[str] = None
+    priority: str
+    progress: str
+    staffName: Optional[str] = None
+    staffImageURL: Optional[str] = None
+    imageURLs: Optional[List[str]] = None
+    notes: Optional[str] = None
+    receiveVerifyCompleted: bool = False
+    coordinateActionCompleted: bool = False
+    followUpResolveCompleted: bool = False
 
 class RequestCreate(RequestBase):
     pass

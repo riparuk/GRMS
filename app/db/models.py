@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table,  DateTime, JSON
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -47,3 +47,18 @@ class Request(Base):
     request_message = Column(String, index=True)
     assignTo = Column(Integer, index=True, nullable=True)
     isDone = Column(Boolean, default=False)
+    
+    # New attributes
+    timestamp = Column(DateTime, index=True)
+    guestName = Column(String, index=True)
+    description = Column(String, index=True)
+    actions = Column(String, nullable=True)
+    priority = Column(String, index=True)
+    progress = Column(String, index=True)
+    staffName = Column(String, nullable=True)
+    staffImageURL = Column(String, nullable=True)
+    imageURLs = Column(JSON, nullable=True)  # Use JSON type for a list of URLs
+    notes = Column(String, nullable=True)
+    receiveVerifyCompleted = Column(Boolean, default=False)
+    coordinateActionCompleted = Column(Boolean, default=False)
+    followUpResolveCompleted = Column(Boolean, default=False)
