@@ -50,33 +50,32 @@ class Property(PropertyBase):
     class Config:
         from_attributes = True
 
+
 class RequestBase(BaseModel):
     guest_id: int
-    property_id: int
-    request_message: str
-    assignTo: Optional[int] = None
-    isDone: bool = False
-
-       # New attributes
-    timestamp: datetime
     guestName: str
     description: str
     actions: Optional[str] = None
     priority: str
-    progress: str
-    staffName: Optional[str] = None
-    staffImageURL: Optional[str] = None
-    imageURLs: Optional[List[str]] = None
-    notes: Optional[str] = None
-    receiveVerifyCompleted: bool = False
-    coordinateActionCompleted: bool = False
-    followUpResolveCompleted: bool = False
 
 class RequestCreate(RequestBase):
     pass
 
 class Request(RequestBase):
     id: int
+    property_id: int
+    request_message: str
+    assignTo: Optional[int] = None
+    isDone: bool
+    timestamp: datetime
+    progress: str
+    staffName: Optional[str] = None
+    staffImageURL: Optional[str] = None
+    imageURLs: Optional[List[str]] = None
+    notes: Optional[str] = None
+    receiveVerifyCompleted: bool
+    coordinateActionCompleted: bool
+    followUpResolveCompleted: bool
 
     class Config:
         orm_mode = True

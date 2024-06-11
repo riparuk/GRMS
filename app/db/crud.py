@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from typing import Optional
 from datetime import datetime
+import pytz
 
 # Property CRUD operations
 def get_property(db: Session, property_id: int):
@@ -111,7 +112,29 @@ def get_requests_by_guest(db: Session, guest_id: int):
     return db.query(models.Request).filter(models.Request.guest_id == guest_id).all()
 
 def create_request(db: Session, request: schemas.RequestCreate):
-    db_request = models.Request(**request.dict())
+    utc_plus_7 = pytz.timezone('Asia/Bangkok')
+    current_time = datetime.now(utc_plus_7)
+    
+    db_request = models.Request(
+        guest_id=request.guest_id,
+        guestName=request.guestName,
+        description=request.description,
+        actions=request.actions,
+        priority=request.priority,
+        property_id=1,  # Default value, update as necessary
+        request_message="",
+        assignTo=None,
+        isDone=False,
+        timestamp=current_time,
+        progress="0/3 Done",
+        staffName=None,
+        staffImageURL=None,
+        imageURLs=[],
+        notes=None,
+        receiveVerifyCompleted=False,
+        coordinateActionCompleted=False,
+        followUpResolveCompleted=False
+    )
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
