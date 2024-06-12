@@ -5,3 +5,4 @@ env
 test_db.db
 sql_app.db
 *.db
+serviceaccountkey.json

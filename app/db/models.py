@@ -4,22 +4,28 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
-
-class Property(Base):
-    __tablename__ = "properties"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    name = Column(String, index=True)
-    staff = relationship("Staff", back_populates="property")
+class Image(Base):
+    __tablename__ = "images"
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, index=True)
+    url = Column(String, index=True)
 
 class Staff(Base):
     __tablename__ = "staff"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     property_id = Column(String, ForeignKey("properties.id"))
-    photo_path = Column(String, nullable=True, default=None)  # Ubah ini
-    filename = Column(String, nullable=True, default=None)
+    photo_id = Column(Integer, ForeignKey("images.id"), nullable=True)
     request_handled = Column(Integer, default=0)
+    
     property = relationship("Property", back_populates="staff")
+    photo = relationship("Image")
+
+class Property(Base):
+    __tablename__ = "properties"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    name = Column(String, index=True)
+    staff = relationship("Staff", back_populates="property")
 
 class Request(Base):
     __tablename__ = "requests"

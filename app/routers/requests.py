@@ -1,16 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-
 from app.db import crud, schemas
+from ..gcs_utils import upload_to_gcs
 from ..dependencies import get_db
+import uuid
+import os
 
 router = APIRouter(
     prefix="/requests",
     tags=["Requests"],
     responses={404: {"description": "Not found"}},
 )
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= 'app\serviceaccountkey.json'
+
+BUCKET_NAME = "images_grms"
 
 @router.post("/", response_model=schemas.Request)
 def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)):
@@ -46,6 +52,18 @@ def read_requests(
     requests = crud.get_requests_filtered(db, startDate=startDate, endDate=endDate, guestName=guestName, priority=priority, progress=progress)
     return requests
 
+@router.get("/{request_id}", response_model=schemas.Request)
+def read_request(request_id: int, db: Session = Depends(get_db)):
+    db_request = crud.get_request(db=db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if db_request.imageURLs:
+        image_details = crud.get_images_by_urls(db=db, urls=db_request.imageURLs)
+        db_request.imageURLs = [schemas.ImageInRequest.from_orm(image) for image in image_details]
+    
+    return db_request
+
 @router.put("/{request_id}/assignto/{staff_id}", response_model=schemas.Request)
 def update_assign_to(request_id: int, staff_id: int, db: Session = Depends(get_db)):
     db_request = crud.update_request_assign_to(db, request_id=request_id, staff_id=staff_id)
@@ -64,3 +82,32 @@ def update_completion_step(request_id: int, step: int, db: Session = Depends(get
     if db_request is None:
         raise HTTPException(status_code=404, detail="Request not found")
     return db_request
+
+@router.post("/{request_id}/images", response_model=List[schemas.Image])
+async def upload_request_images(request_id: int, files: List[UploadFile] = File(...), db: Session = Depends(get_db)):
+    images = []
+    for file in files:
+        if file.content_type not in ["image/jpeg", "image/png"]:
+            raise HTTPException(status_code=400, detail="Invalid file type")
+
+        destination_blob_name = f"request_images/{uuid.uuid4()}.{file.filename.split('.')[-1]}"
+        public_url = upload_to_gcs(file.file, BUCKET_NAME, destination_blob_name, file.content_type)
+        
+        db_image = crud.create_image(db=db, image=schemas.ImageCreate(filename=file.filename, url=public_url))
+        images.append(db_image)
+
+    db_request = crud.get_request(db=db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if db_request.imageURLs:
+        db_request.imageURLs.extend([image.url for image in images])
+    else:
+        db_request.imageURLs = [image.url for image in images]
+
+    db.commit()
+    db.refresh(db_request)
+    
+    return images
+
+

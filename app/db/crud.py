@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import pytz
 
@@ -53,12 +53,10 @@ def create_staff(db: Session, staff: schemas.StaffCreate):
     db.refresh(db_staff)
     return db_staff
 
-def update_staff_photo_path(db: Session, staff_id: int, photo_url: str, filename: str):
+def update_staff_photo(db: Session, staff_id: int, photo_id: int):
     db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
     if db_staff:
-       
-        db_staff.photo_path = photo_url
-        db_staff.filename = filename
+        db_staff.photo_id = photo_id
         db.commit()
         db.refresh(db_staff)
     return db_staff
@@ -193,5 +191,29 @@ def get_requests_filtered(db: Session, startDate: datetime, endDate: datetime, g
         query = query.filter(models.Request.progress == progress)
     
     return query.all()
+
+def create_image(db: Session, image: schemas.ImageCreate):
+    db_image = models.Image(filename=image.filename, url=image.url)
+    db.add(db_image)
+    db.commit()
+    db.refresh(db_image)
+    return db_image
+
+def get_images_by_urls(db: Session, urls: List[str]):
+    return db.query(models.Image).filter(models.Image.url.in_(urls)).all()
+
+def get_image(db: Session, image_id: int):
+    return db.query(models.Image).filter(models.Image.id == image_id).first()
+
+def get_images(db: Session, skip: int = 0, limit: int = 10):
+    return db.query(models.Image).offset(skip).limit(limit).all()
+
+def delete_image(db: Session, image_id: int):
+    db_image = db.query(models.Image).filter(models.Image.id == image_id).first()
+    if db_image:
+        db.delete(db_image)
+        db.commit()
+    return db_image
+
 
 
