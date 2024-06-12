@@ -1,6 +1,6 @@
 from fastapi import Depends, FastAPI
 from app.db import models
-from app.routers import properties, staffs, tasks, messages, requests
+from app.routers import properties, staffs, messages, requests
 from .dependencies import get_query_token, get_token_header
 from app.db.database import engine
 
@@ -13,7 +13,6 @@ app = FastAPI(
 app.include_router(messages.router)
 app.include_router(properties.router)
 app.include_router(staffs.router)
-app.include_router(tasks.router)
 app.include_router(requests.router)
 
 @app.get("/")

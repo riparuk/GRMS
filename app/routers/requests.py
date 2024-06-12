@@ -14,10 +14,13 @@ router = APIRouter(
 
 @router.post("/", response_model=schemas.Request)
 def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)):
-    return crud.create_request(db=db, request=request)
+    try:
+        return crud.create_request(db=db, request=request)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/property/{property_id}", response_model=List[schemas.Request])
-def read_requests_by_property(property_id: int, db: Session = Depends(get_db)):
+def read_requests_by_property(property_id: str, db: Session = Depends(get_db)):  # Ensure property_id is a string
     requests = crud.get_requests_by_property(db, property_id=property_id)
     return requests
 
@@ -36,7 +39,7 @@ def read_requests(
     startDate: Optional[datetime] = None, 
     endDate: Optional[datetime] = None, 
     guestName: Optional[str] = None,
-    priority: Optional[str] = None,
+    priority: Optional[float] = None,
     progress: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
@@ -50,9 +53,14 @@ def update_assign_to(request_id: int, staff_id: int, db: Session = Depends(get_d
         raise HTTPException(status_code=404, detail="Request not found")
     return db_request
 
-@router.put("/{request_id}/done/{is_done}", response_model=schemas.Request)
-def update_is_done(request_id: int, is_done: bool, db: Session = Depends(get_db)):
-    db_request = crud.update_request_is_done(db, request_id=request_id, is_done=is_done)
+@router.put("/{request_id}/update-step/{step}", response_model=schemas.Request)
+def update_completion_step(request_id: int, step: int, db: Session = Depends(get_db)):
+    if step not in [1, 2, 3]:
+        raise HTTPException(status_code=400, detail="Invalid step")
+    
+    db_request, error = crud.update_request_completion_steps(db, request_id=request_id, step=step)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
     if db_request is None:
         raise HTTPException(status_code=404, detail="Request not found")
     return db_request

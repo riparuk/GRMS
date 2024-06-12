@@ -4,6 +4,8 @@ from typing import Optional
 from datetime import datetime
 import pytz
 
+VALID_PRIORITIES = [1.0, 2.0, 3.0, 4.0]
+
 # Property CRUD operations
 def get_property(db: Session, property_id: int):
     return db.query(models.Property).filter(models.Property.id == property_id).first()
@@ -41,13 +43,30 @@ def get_staffs(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.Staff).offset(skip).limit(limit).all()
 
 def create_staff(db: Session, staff: schemas.StaffCreate):
-    db_staff = models.Staff(name=staff.name, property_id=staff.property_id)
-    if staff.task_ids:
-        tasks = db.query(models.Task).filter(models.Task.id.in_(staff.task_ids)).all()
-        db_staff.tasks.extend(tasks)
+    db_staff = models.Staff(
+        name=staff.name,
+        property_id=staff.property_id,
+        photo_path=staff.photo_path
+    )
     db.add(db_staff)
     db.commit()
     db.refresh(db_staff)
+    return db_staff
+
+def update_staff_photo_path(db: Session, staff_id: int, photo_path_url: str):
+    db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
+    if db_staff:
+        db_staff.photo_path = photo_path_url
+        db.commit()
+        db.refresh(db_staff)
+    return db_staff
+
+def delete_staff_photo_path(db: Session, staff_id: int):
+    db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
+    if db_staff:
+        db_staff.photo_path = None
+        db.commit()
+        db.refresh(db_staff)
     return db_staff
 
 def update_staff(db: Session, staff_id: int, staff: schemas.StaffCreate):
@@ -55,9 +74,6 @@ def update_staff(db: Session, staff_id: int, staff: schemas.StaffCreate):
     if db_staff:
         db_staff.name = staff.name
         db_staff.property_id = staff.property_id
-        if staff.task_ids:
-            tasks = db.query(models.Task).filter(models.Task.id.in_(staff.task_ids)).all()
-            db_staff.tasks = tasks
         db.commit()
         db.refresh(db_staff)
     return db_staff
@@ -68,35 +84,6 @@ def delete_staff(db: Session, staff_id: int):
         db.delete(db_staff)
         db.commit()
     return db_staff
-
-# Task CRUD operations
-def get_task(db: Session, task_id: int):
-    return db.query(models.Task).filter(models.Task.id == task_id).first()
-
-def get_tasks(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(models.Task).offset(skip).limit(limit).all()
-
-def create_task(db: Session, task: schemas.TaskCreate):
-    db_task = models.Task(description=task.description)
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-    return db_task
-
-def update_task(db: Session, task_id: int, task: schemas.TaskCreate):
-    db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
-    if db_task:
-        db_task.description = task.description
-        db.commit()
-        db.refresh(db_task)
-    return db_task
-
-def delete_task(db: Session, task_id: int):
-    db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
-    if db_task:
-        db.delete(db_task)
-        db.commit()
-    return db_task
 
 # CRUD operations for Request
 def get_request(db: Session, request_id: int):
@@ -112,8 +99,16 @@ def get_requests_by_guest(db: Session, guest_id: int):
     return db.query(models.Request).filter(models.Request.guest_id == guest_id).all()
 
 def create_request(db: Session, request: schemas.RequestCreate):
-    utc_plus_7 = pytz.timezone('Asia/Bangkok')
-    current_time = datetime.now(utc_plus_7)
+    if request.priority not in VALID_PRIORITIES:
+        raise ValueError("Invalid priority value. Valid values are: 1.0, 2.0, 3.0, 4.0.")
+VALID_PRIORITIES = [1.0, 2.0, 3.0, 4.0]
+
+def create_request(db: Session, request: schemas.RequestCreate):
+    if request.priority not in VALID_PRIORITIES:
+        raise ValueError("Invalid priority value. Valid values are: 1.0, 2.0, 3.0, 4.0.")
+    
+    tz = pytz.timezone('Asia/Jakarta')
+    created_at = datetime.now(tz)
     
     db_request = models.Request(
         guest_id=request.guest_id,
@@ -121,12 +116,12 @@ def create_request(db: Session, request: schemas.RequestCreate):
         description=request.description,
         actions=request.actions,
         priority=request.priority,
-        property_id=1,  # Default value, update as necessary
+        property_id=request.property_id,
         request_message="",
         assignTo=None,
         isDone=False,
-        timestamp=current_time,
-        progress="0/3 Done",
+        created_at=created_at,
+        updated_at=created_at,
         staffName=None,
         staffImageURL=None,
         imageURLs=[],
@@ -144,19 +139,38 @@ def update_request_assign_to(db: Session, request_id: int, staff_id: int):
     db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
     if db_request:
         db_request.assignTo = staff_id
+        db_request.updated_at = datetime.now(pytz.timezone('Asia/Jakarta'))
         db.commit()
         db.refresh(db_request)
     return db_request
 
-def update_request_is_done(db: Session, request_id: int, is_done: bool):
+def update_request_completion_steps(db: Session, request_id: int, step: int):
     db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
-    if db_request:
-        db_request.isDone = is_done
-        db.commit()
-        db.refresh(db_request)
-    return db_request
+    if not db_request:
+        return None, "Request not found"
+    
+    if step == 1:
+        db_request.receiveVerifyCompleted = True
+    elif step == 2:
+        if not db_request.receiveVerifyCompleted:
+            return None, "Cannot complete coordinateActionCompleted before receiveVerifyCompleted"
+        db_request.coordinateActionCompleted = True
+    elif step == 3:
+        if not db_request.receiveVerifyCompleted:
+            return None, "Cannot complete followUpResolveCompleted before receiveVerifyCompleted"
+        if not db_request.coordinateActionCompleted:
+            return None, "Cannot complete followUpResolveCompleted before coordinateActionCompleted"
+        db_request.followUpResolveCompleted = True
+        db_request.isDone = True
+    
+    db_request.updated_at = datetime.now(pytz.timezone('Asia/Jakarta'))
+    db.commit()
+    db.refresh(db_request)
+    return db_request, None
 
-def get_requests_filtered(db: Session, startDate: datetime, endDate: datetime, guestName: Optional[str], priority: Optional[str], progress: Optional[str]):
+
+
+def get_requests_filtered(db: Session, startDate: datetime, endDate: datetime, guestName: Optional[str], priority: Optional[float], progress: Optional[str]):
     query = db.query(models.Request)
     
     if startDate:
@@ -171,3 +185,5 @@ def get_requests_filtered(db: Session, startDate: datetime, endDate: datetime, g
         query = query.filter(models.Request.progress == progress)
     
     return query.all()
+
+

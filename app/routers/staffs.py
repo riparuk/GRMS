@@ -7,13 +7,20 @@ from ..dependencies import get_db
 router = APIRouter(
     prefix="/staffs",
     tags=["Staffs"],
-    # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
 
 @router.post("/", response_model=schemas.Staff)
 def create_staff(staff: schemas.StaffCreate, db: Session = Depends(get_db)):
     return crud.create_staff(db=db, staff=staff)
+
+@router.put("/{staff_id}/photo", response_model=schemas.Staff)
+def update_staff_photo(staff_id: int, photo_url: str, db: Session = Depends(get_db)):
+    return crud.update_staff_photo(db=db, staff_id=staff_id, photo_url=photo_url)
+
+@router.delete("/{staff_id}/photo", response_model=schemas.Staff)
+def delete_staff_photo(staff_id: int, db: Session = Depends(get_db)):
+    return crud.delete_staff_photo(db=db, staff_id=staff_id)
 
 @router.get("/", response_model=List[schemas.Staff])
 def read_staffs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
