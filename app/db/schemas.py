@@ -8,14 +8,18 @@ class StaffBase(BaseModel):
     property_id: str
 
 class StaffCreate(StaffBase):
-    photo_path: Optional[str] = None
+    photo_path: Optional[str] = None  # Ubah ini
+    filename: Optional[str] = None
 
 class Staff(StaffBase):
     id: int
-    photo_path: Optional[str] = None
+    photo_path: Optional[str] = None  # Ubah ini
+    filename: Optional[str] = None
+    request_handled: int
 
     class Config:
         orm_mode = True
+
 
 class PropertyBase(BaseModel):
     name: str

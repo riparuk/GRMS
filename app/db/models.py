@@ -16,9 +16,10 @@ class Staff(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     property_id = Column(String, ForeignKey("properties.id"))
-    photo_path = Column(String, nullable=True)
+    photo_path = Column(String, nullable=True, default=None)  # Ubah ini
+    filename = Column(String, nullable=True, default=None)
+    request_handled = Column(Integer, default=0)
     property = relationship("Property", back_populates="staff")
-
 
 class Request(Base):
     __tablename__ = "requests"

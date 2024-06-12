@@ -53,13 +53,16 @@ def create_staff(db: Session, staff: schemas.StaffCreate):
     db.refresh(db_staff)
     return db_staff
 
-def update_staff_photo_path(db: Session, staff_id: int, photo_path_url: str):
+def update_staff_photo_path(db: Session, staff_id: int, photo_url: str, filename: str):
     db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
     if db_staff:
-        db_staff.photo_path = photo_path_url
+       
+        db_staff.photo_path = photo_url
+        db_staff.filename = filename
         db.commit()
         db.refresh(db_staff)
     return db_staff
+
 
 def delete_staff_photo_path(db: Session, staff_id: int):
     db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
@@ -148,25 +151,30 @@ def update_request_completion_steps(db: Session, request_id: int, step: int):
     db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
     if not db_request:
         return None, "Request not found"
+
+    db_staff = db.query(models.Staff).filter(models.Staff.id == db_request.assignTo).first()
+    if not db_staff:
+        return None, "Assigned staff not found"
     
-    if step == 1:
+    if step == 1 and not db_request.receiveVerifyCompleted:
         db_request.receiveVerifyCompleted = True
-    elif step == 2:
-        if not db_request.receiveVerifyCompleted:
-            return None, "Cannot complete coordinateActionCompleted before receiveVerifyCompleted"
+        db_staff.request_handled += 1
+    elif step == 2 and db_request.receiveVerifyCompleted and not db_request.coordinateActionCompleted:
         db_request.coordinateActionCompleted = True
-    elif step == 3:
-        if not db_request.receiveVerifyCompleted:
-            return None, "Cannot complete followUpResolveCompleted before receiveVerifyCompleted"
-        if not db_request.coordinateActionCompleted:
-            return None, "Cannot complete followUpResolveCompleted before coordinateActionCompleted"
+        db_staff.request_handled += 1
+    elif step == 3 and db_request.receiveVerifyCompleted and db_request.coordinateActionCompleted and not db_request.followUpResolveCompleted:
         db_request.followUpResolveCompleted = True
         db_request.isDone = True
-    
+        db_staff.request_handled += 1
+    else:
+        return None, "Invalid step or previous steps not completed"
+
     db_request.updated_at = datetime.now(pytz.timezone('Asia/Jakarta'))
     db.commit()
     db.refresh(db_request)
+    db.refresh(db_staff)
     return db_request, None
+
 
 
 
