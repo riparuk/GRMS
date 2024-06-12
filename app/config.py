@@ -1,7 +1,9 @@
 import os
 from pydantic.v1 import BaseSettings
+from dotenv import load_dotenv
 
 class Settings(BaseSettings):
+    load_dotenv()
     # Database settings
     DATABASE_HOST: str = os.getenv("DATABASE_HOST", "localhost")
     DATABASE_PORT: int = int(os.getenv("DATABASE_PORT", 3306))
@@ -14,7 +16,8 @@ class Settings(BaseSettings):
     )
 
     # OpenAI API settings
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "your-openai-api-key")
+    # OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "openai_api_key")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "openai_api")
 
     # Other settings
     APP_NAME: str = os.getenv("APP_NAME", "FastAPI Application")
