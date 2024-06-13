@@ -15,7 +15,7 @@ router = APIRouter(
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= 'app\serviceaccountkey.json'
 
-BUCKET_NAME = "staff_photo_bucket"
+BUCKET_NAME = "images_grms"
 
 @router.post("/", response_model=schemas.Staff)
 def create_staff(staff: schemas.StaffCreate, db: Session = Depends(get_db)):
@@ -29,15 +29,25 @@ async def update_staff_photo(staff_id: int, file: UploadFile = File(...), db: Se
     destination_blob_name = f"staff_photos/{uuid.uuid4()}.{file.filename.split('.')[-1]}"
     public_url = upload_to_gcs(file.file, BUCKET_NAME, destination_blob_name, file.content_type)
     
-    db_image = crud.create_image(db=db, image=schemas.ImageCreate(filename=file.filename, url=public_url))
-    db_staff = crud.update_staff_photo(db=db, staff_id=staff_id, photo_id=db_image.id)
+    db_staff = crud.update_staff_photo(
+        db=db,
+        staff_id=staff_id,
+        image=schemas.ImageCreate(
+            filename=file.filename,
+            url=public_url
+        ),
+        bucket_name=BUCKET_NAME
+    )
     if db_staff is None:
         raise HTTPException(status_code=404, detail="Staff not found")
     return db_staff
 
-@router.delete("/{staff_id}/photo_path", response_model=schemas.Staff)
+@router.delete("/{staff_id}/photo", response_model=schemas.Staff)
 def delete_staff_photo(staff_id: int, db: Session = Depends(get_db)):
-    return crud.delete_staff_photo_path(db=db, staff_id=staff_id)
+    db_staff = crud.delete_staff_photo(db=db, staff_id=staff_id, bucket_name=BUCKET_NAME)
+    if db_staff is None:
+        raise HTTPException(status_code=404, detail="Staff not found")
+    return db_staff
 
 @router.get("/", response_model=List[schemas.Staff])
 def read_staffs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):

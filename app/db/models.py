@@ -15,11 +15,9 @@ class Staff(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     property_id = Column(String, ForeignKey("properties.id"))
-    photo_id = Column(Integer, ForeignKey("images.id"), nullable=True)
+    photo_path = Column(JSON, nullable=True)  # Change to JSON
     request_handled = Column(Integer, default=0)
-    
     property = relationship("Property", back_populates="staff")
-    photo = relationship("Image")
 
 class Property(Base):
     __tablename__ = "properties"

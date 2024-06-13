@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from typing import Optional, List
 from datetime import datetime
+from ..gcs_utils import delete_from_gcs
 import pytz
 
 VALID_PRIORITIES = [1.0, 2.0, 3.0, 4.0]
@@ -46,25 +47,41 @@ def create_staff(db: Session, staff: schemas.StaffCreate):
     db_staff = models.Staff(
         name=staff.name,
         property_id=staff.property_id,
-        photo_path=staff.photo_path
     )
     db.add(db_staff)
     db.commit()
     db.refresh(db_staff)
     return db_staff
 
-def update_staff_photo(db: Session, staff_id: int, photo_id: int):
-    db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
+def update_staff_photo(db: Session, staff_id: int, image: schemas.ImageCreate, bucket_name: str):
+    db_staff = get_staff(db, staff_id)
     if db_staff:
-        db_staff.photo_id = photo_id
+        # Delete old photo from GCS
+        if db_staff.photo_path:
+            old_url = db_staff.photo_path["url"]
+            blob_name = "staff_photos/" + old_url.split("/")[-1]
+            delete_from_gcs(bucket_name, blob_name)
+            delete_image(db, db_staff.photo_path["id"])
+        
+        db_image = create_image(db, image)
+        db_staff.photo_path = {
+            "id": db_image.id,
+            "filename": db_image.filename,
+            "url": db_image.url
+        }
         db.commit()
         db.refresh(db_staff)
     return db_staff
 
-
-def delete_staff_photo_path(db: Session, staff_id: int):
-    db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
-    if db_staff:
+def delete_staff_photo(db: Session, staff_id: int, bucket_name: str):
+    db_staff = get_staff(db, staff_id)
+    if db_staff and db_staff.photo_path:
+        # Delete photo from GCS
+        old_url = db_staff.photo_path["url"]
+        blob_name = "staff_photos/" + old_url.split("/")[-1]
+        delete_from_gcs(bucket_name, blob_name)
+        delete_image(db, db_staff.photo_path["id"])
+        
         db_staff.photo_path = None
         db.commit()
         db.refresh(db_staff)
@@ -86,11 +103,7 @@ def delete_staff(db: Session, staff_id: int):
         db.commit()
     return db_staff
 
-# CRUD operations for Request
-from sqlalchemy.orm import Session
-from datetime import datetime
-from typing import Optional
-from . import models
+# CRUD operations for Requests
 
 def get_requests_filtered(
     db: Session,
@@ -127,15 +140,6 @@ def get_requests_filtered(
 
 def get_request(db: Session, request_id: int):
     return db.query(models.Request).filter(models.Request.id == request_id).first()
-
-def get_requests_by_property(db: Session, property_id: int):
-    return db.query(models.Request).filter(models.Request.property_id == property_id).all()
-
-def get_requests_by_staff(db: Session, staff_id: int):
-    return db.query(models.Request).filter(models.Request.assignTo == staff_id).all()
-
-def get_requests_by_guest(db: Session, guest_id: int):
-    return db.query(models.Request).filter(models.Request.guest_id == guest_id).all()
 
 def create_request(db: Session, request: schemas.RequestCreate):
     if request.priority not in VALID_PRIORITIES:
@@ -174,14 +178,26 @@ def create_request(db: Session, request: schemas.RequestCreate):
     db.refresh(db_request)
     return db_request
 
-def update_request_assign_to(db: Session, request_id: int, staff_id: int):
+def update_request_notes(db: Session, request_id: int, notes: str):
     db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
     if db_request:
+        db_request.notes = notes
+        db_request.updated_at = datetime.now(pytz.timezone('Asia/Jakarta'))  # update timestamp
+        db.commit()
+        db.refresh(db_request)
+    return db_request
+
+def update_request_assign_to(db: Session, request_id: int, staff_id: int):
+    db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    db_staff = get_staff(db, staff_id)
+    if db_request and db_staff:
         db_request.assignTo = staff_id
         db_request.updated_at = datetime.now(pytz.timezone('Asia/Jakarta'))
         db.commit()
         db.refresh(db_request)
-    return db_request
+        return db_request
+    else:
+        return None
 
 def update_request_completion_steps(db: Session, request_id: int, step: int):
     db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
