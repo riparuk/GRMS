@@ -15,7 +15,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= 'app\serviceaccountkey.json'
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= 'app/serviceaccountkey.json'
 
 BUCKET_NAME = "images_grms"
 
