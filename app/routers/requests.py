@@ -7,6 +7,7 @@ from ..gcs_utils import upload_to_gcs
 from ..dependencies import get_db
 import uuid
 import os
+import logging
 
 router = APIRouter(
     prefix="/requests",
@@ -59,7 +60,7 @@ def read_request(request_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Request not found")
     
     if db_request.imageURLs:
-        image_details = crud.get_images_by_urls(db=db, urls=db_request.imageURLs)
+        image_details = crud.get_images_by_id(db=db, ids=db_request.imageURLs)
         db_request.imageURLs = [schemas.ImageInRequest.from_orm(image) for image in image_details]
     
     return db_request
@@ -99,15 +100,20 @@ async def upload_request_images(request_id: int, files: List[UploadFile] = File(
     db_request = crud.get_request(db=db, request_id=request_id)
     if db_request is None:
         raise HTTPException(status_code=404, detail="Request not found")
-    
-    if db_request.imageURLs:
-        db_request.imageURLs.extend([image.url for image in images])
-    else:
-        db_request.imageURLs = [image.url for image in images]
+
+    # Ensure db_request.imageURLs is a list and extend it with new IDs
+    current_image_ids = db_request.imageURLs or []
+    new_image_ids = [image.id for image in images]
+    current_image_ids.extend(new_image_ids)
+    db_request.imageURLs = current_image_ids
+
+    logging.info(f"Updated image IDs: {db_request.imageURLs}")
 
     db.commit()
     db.refresh(db_request)
     
     return images
+
+
 
 

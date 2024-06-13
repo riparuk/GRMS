@@ -23,6 +23,7 @@ class ImageInRequest(BaseModel):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 class StaffBase(BaseModel):
     name: str

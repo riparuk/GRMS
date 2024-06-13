@@ -202,6 +202,9 @@ def create_image(db: Session, image: schemas.ImageCreate):
 def get_images_by_urls(db: Session, urls: List[str]):
     return db.query(models.Image).filter(models.Image.url.in_(urls)).all()
 
+def get_images_by_id(db: Session, ids: List[int]):
+    return db.query(models.Image).filter(models.Image.id.in_(ids)).all()
+
 def get_image(db: Session, image_id: int):
     return db.query(models.Image).filter(models.Image.id == image_id).first()
 
