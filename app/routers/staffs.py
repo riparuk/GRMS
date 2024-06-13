@@ -48,7 +48,7 @@ def delete_staff_photo(staff_id: int, db: Session = Depends(get_db)):
     if db_staff is None:
         raise HTTPException(status_code=404, detail="Staff not found")
     return db_staff
-
+    
 @router.get("/", response_model=List[schemas.Staff])
 def read_staffs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     staffs = crud.get_staffs(db, skip=skip, limit=limit)

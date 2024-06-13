@@ -112,7 +112,7 @@ def get_requests_filtered(
     guest_id: Optional[int] = None,
     property_id: Optional[str] = None,
     request_id: Optional[int] = None,
-    assign_to: Optional[int] = None,
+    assignTo: Optional[int] = None,
     priority: Optional[float] = None,
 ):
     query = db.query(models.Request)
@@ -130,8 +130,8 @@ def get_requests_filtered(
         query = query.filter(models.Request.property_id == property_id)
     if request_id:
         query = query.filter(models.Request.id == request_id)
-    if assign_to:
-        query = query.filter(models.Request.assign_to == assign_to)
+    if assignTo:
+        query = query.filter(models.Request.assignTo == assignTo)
     if priority:
         query = query.filter(models.Request.priority == priority)
 
@@ -192,6 +192,8 @@ def update_request_assign_to(db: Session, request_id: int, staff_id: int):
     db_staff = get_staff(db, staff_id)
     if db_request and db_staff:
         db_request.assignTo = staff_id
+        db_request.staffName = db_staff.name
+        db_request.staffImageURL = db_staff.photo_path
         db_request.updated_at = datetime.now(pytz.timezone('Asia/Jakarta'))
         db.commit()
         db.refresh(db_request)

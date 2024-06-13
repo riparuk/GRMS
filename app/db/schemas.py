@@ -15,6 +15,7 @@ class Image(ImageBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 class ImageInRequest(BaseModel):
     id: int
@@ -39,6 +40,7 @@ class Staff(StaffBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 class PropertyBase(BaseModel):
     name: str
@@ -52,6 +54,7 @@ class Property(PropertyBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 class RequestBase(BaseModel):
     guest_id: int
@@ -73,8 +76,8 @@ class Request(RequestBase):
     created_at: datetime
     updated_at: datetime
     staffName: Optional[str] = None
-    staffImageURL: Optional[str] = None
-    imageURLs: Optional[List[ImageInRequest]] = None
+    staffImageURL: Optional[Image] = None
+    imageURLs: Optional[List[Image]] = None
     notes: Optional[str] = None
     receiveVerifyCompleted: bool
     coordinateActionCompleted: bool
@@ -82,4 +85,5 @@ class Request(RequestBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 

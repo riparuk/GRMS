@@ -40,7 +40,7 @@ class Request(Base):
     actions = Column(String, nullable=True)
     priority = Column(Float, index=True)
     staffName = Column(String, nullable=True)
-    staffImageURL = Column(String, nullable=True)
+    staffImageURL = Column(JSON, nullable=True)
     imageURLs = Column(JSON, nullable=True)
     notes = Column(String, nullable=True)
     receiveVerifyCompleted = Column(Boolean, default=False)
