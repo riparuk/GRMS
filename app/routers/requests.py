@@ -43,11 +43,10 @@ async def upload_request_images(request_id: int, files: List[UploadFile] = File(
     if db_request is None:
         raise HTTPException(status_code=404, detail="Request not found")
 
-    # Pastikan db_request.imageURLs adalah daftar dan tambahkan URL gambar baru
-    current_image_urls = db_request.imageURLs or []
-    new_image_urls = [image.url for image in images]
-    current_image_urls.extend(new_image_urls)
-    db_request.imageURLs = current_image_urls
+    current_image_ids = db_request.imageURLs or []
+    new_image_ids = [image.id for image in images]
+    current_image_ids.extend(new_image_ids)
+    db_request.imageURLs = current_image_ids
 
     db.commit()
     db.refresh(db_request)
@@ -83,8 +82,15 @@ def read_requests(
     return requests
 
 @router.put("/{request_id}/assignto/{staff_id}", response_model=schemas.Request)
-def update_assign_to(request_id: int, staff_id: int, db: Session = Depends(get_db)):
-    db_request = crud.update_request_assign_to(db, request_id=request_id, staff_id=staff_id)
+def update_request_assign_to(request_id: int, staff_id: int, db: Session = Depends(get_db)):
+    db_request = crud.update_request_assign_to(db=db, request_id=request_id, staff_id=staff_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Request or Staff not found")
+    return db_request
+
+@router.put("/{request_id}/notes", response_model=schemas.Request)
+def update_request_notes(request_id: int, notes: str, db: Session = Depends(get_db)):
+    db_request = crud.update_request_notes(db=db, request_id=request_id, notes=notes)
     if db_request is None:
         raise HTTPException(status_code=404, detail="Request not found")
     return db_request

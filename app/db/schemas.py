@@ -30,16 +30,15 @@ class StaffBase(BaseModel):
     property_id: str
 
 class StaffCreate(StaffBase):
-    photo_id: Optional[int] = None
+    pass
 
 class Staff(StaffBase):
     id: int
-    photo: Optional[Image] = None
+    photo_path: Optional[Image] = None
     request_handled: int
 
     class Config:
         orm_mode = True
-
 
 class PropertyBase(BaseModel):
     name: str
