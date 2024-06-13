@@ -87,6 +87,44 @@ def delete_staff(db: Session, staff_id: int):
     return db_staff
 
 # CRUD operations for Request
+from sqlalchemy.orm import Session
+from datetime import datetime
+from typing import Optional
+from . import models
+
+def get_requests_filtered(
+    db: Session,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    guest_id: Optional[int] = None,
+    property_id: Optional[str] = None,
+    request_id: Optional[int] = None,
+    assign_to: Optional[int] = None,
+    priority: Optional[float] = None,
+):
+    query = db.query(models.Request)
+    
+    if start_date and end_date:
+        query = query.filter(models.Request.created_at.between(start_date, end_date))
+    elif start_date:
+        query = query.filter(models.Request.created_at >= start_date)
+    elif end_date:
+        query = query.filter(models.Request.created_at <= end_date)
+
+    if guest_id:
+        query = query.filter(models.Request.guest_id == guest_id)
+    if property_id:
+        query = query.filter(models.Request.property_id == property_id)
+    if request_id:
+        query = query.filter(models.Request.id == request_id)
+    if assign_to:
+        query = query.filter(models.Request.assign_to == assign_to)
+    if priority:
+        query = query.filter(models.Request.priority == priority)
+
+    return query.all()
+
+
 def get_request(db: Session, request_id: int):
     return db.query(models.Request).filter(models.Request.id == request_id).first()
 
@@ -172,25 +210,6 @@ def update_request_completion_steps(db: Session, request_id: int, step: int):
     db.refresh(db_request)
     db.refresh(db_staff)
     return db_request, None
-
-
-
-
-def get_requests_filtered(db: Session, startDate: datetime, endDate: datetime, guestName: Optional[str], priority: Optional[float], progress: Optional[str]):
-    query = db.query(models.Request)
-    
-    if startDate:
-        query = query.filter(models.Request.timestamp >= startDate)
-    if endDate:
-        query = query.filter(models.Request.timestamp <= endDate)
-    if guestName:
-        query = query.filter(models.Request.guestName == guestName)
-    if priority:
-        query = query.filter(models.Request.priority == priority)
-    if progress:
-        query = query.filter(models.Request.progress == progress)
-    
-    return query.all()
 
 def create_image(db: Session, image: schemas.ImageCreate):
     db_image = models.Image(filename=image.filename, url=image.url)
