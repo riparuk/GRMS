@@ -5,7 +5,11 @@ import random
 import string
 from app.prep.preprocessing import classify_message
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/mlmodel",
+    tags=["ML MODEL"],
+    responses={404: {"description": "Not found"}},
+)
 
 class TaskData(BaseModel):
     name: str
