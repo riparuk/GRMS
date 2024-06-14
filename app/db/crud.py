@@ -112,7 +112,7 @@ def get_requests_filtered(
     guest_id: Optional[int] = None,
     property_id: Optional[str] = None,
     request_id: Optional[int] = None,
-    assignTo: Optional[int] = None,
+    assignTo: Optional[str] = None,
     priority: Optional[float] = None,
 ):
     query = db.query(models.Request)

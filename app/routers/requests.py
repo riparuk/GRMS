@@ -87,7 +87,7 @@ def read_requests(
     guest_id: Optional[int] = None,
     property_id: Optional[str] = None,
     request_id: Optional[int] = None,
-    assignTo: Optional[int] = None,
+    assignTo: Optional[str] = None,
     priority: Optional[float] = None,
     db: Session = Depends(get_db)
 ):

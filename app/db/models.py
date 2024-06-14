@@ -31,7 +31,7 @@ class Request(Base):
     guest_id = Column(Integer, index=True)
     property_id = Column(String, index=True)
     request_message = Column(String, index=True)
-    assignTo = Column(Integer, index=True, nullable=True)
+    assignTo = Column(String, index=True, nullable=True)
     isDone = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now(), index=True)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), index=True)
