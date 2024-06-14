@@ -12,7 +12,7 @@ class Image(Base):
 
 class Staff(Base):
     __tablename__ = "staff"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     name = Column(String, index=True)
     property_id = Column(String, ForeignKey("properties.id"))
     photo_path = Column(JSON, nullable=True)  # Change to JSON

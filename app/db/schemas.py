@@ -34,7 +34,7 @@ class StaffCreate(StaffBase):
     pass
 
 class Staff(StaffBase):
-    id: int
+    id: str
     photo_path: Optional[Image] = None
     request_handled: int
 

@@ -109,7 +109,7 @@ def read_requests(
     return requests
 
 @router.put("/{request_id}/assignto/{staff_id}", response_model=schemas.Request)
-def update_request_assign_to(request_id: int, staff_id: int, db: Session = Depends(get_db)):
+def update_request_assign_to(request_id: int, staff_id: str, db: Session = Depends(get_db)):
     db_request = crud.update_request_assign_to(db=db, request_id=request_id, staff_id=staff_id)
     if db_request is None:
         raise HTTPException(status_code=404, detail="Request or Staff not found")
