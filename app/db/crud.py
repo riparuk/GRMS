@@ -37,7 +37,7 @@ def delete_property(db: Session, property_id: int):
     return db_property
 
 # Staff CRUD operations
-def get_staff(db: Session, staff_id: int):
+def get_staff(db: Session, staff_id: str):
     return db.query(models.Staff).filter(models.Staff.id == staff_id).first()
 
 def get_staffs(db: Session, skip: int = 0, limit: int = 10):
@@ -53,7 +53,7 @@ def create_staff(db: Session, staff: schemas.StaffCreate):
     db.refresh(db_staff)
     return db_staff
 
-def update_staff_photo(db: Session, staff_id: int, image: schemas.ImageCreate, bucket_name: str):
+def update_staff_photo(db: Session, staff_id: str, image: schemas.ImageCreate, bucket_name: str):
     db_staff = get_staff(db, staff_id)
     if db_staff:
         # Delete old photo from GCS
@@ -73,7 +73,7 @@ def update_staff_photo(db: Session, staff_id: int, image: schemas.ImageCreate, b
         db.refresh(db_staff)
     return db_staff
 
-def delete_staff_photo(db: Session, staff_id: int, bucket_name: str):
+def delete_staff_photo(db: Session, staff_id: str, bucket_name: str):
     db_staff = get_staff(db, staff_id)
     if db_staff and db_staff.photo_path:
         # Delete photo from GCS
@@ -87,7 +87,7 @@ def delete_staff_photo(db: Session, staff_id: int, bucket_name: str):
         db.refresh(db_staff)
     return db_staff
 
-def update_staff(db: Session, staff_id: int, staff: schemas.StaffCreate):
+def update_staff(db: Session, staff_id: str, staff: schemas.StaffCreate):
     db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
     if db_staff:
         db_staff.name = staff.name
@@ -96,7 +96,7 @@ def update_staff(db: Session, staff_id: int, staff: schemas.StaffCreate):
         db.refresh(db_staff)
     return db_staff
 
-def delete_staff(db: Session, staff_id: int):
+def delete_staff(db: Session, staff_id: str):
     db_staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
     if db_staff:
         db.delete(db_staff)
@@ -187,7 +187,7 @@ def update_request_notes(db: Session, request_id: int, notes: str):
         db.refresh(db_request)
     return db_request
 
-def update_request_assign_to(db: Session, request_id: int, staff_id: int):
+def update_request_assign_to(db: Session, request_id: int, staff_id: str):
     db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
     db_staff = get_staff(db, staff_id)
     if db_request and db_staff:

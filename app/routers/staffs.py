@@ -20,7 +20,7 @@ def create_staff(staff: schemas.StaffCreate, db: Session = Depends(get_db)):
     return crud.create_staff(db=db, staff=staff)
 
 @router.put("/{staff_id}/photo", response_model=schemas.Staff)
-async def update_staff_photo(staff_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def update_staff_photo(staff_id: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
     if file.content_type not in ["image/jpeg", "image/png"]:
         raise HTTPException(status_code=400, detail="Invalid file type")
 
@@ -41,7 +41,7 @@ async def update_staff_photo(staff_id: int, file: UploadFile = File(...), db: Se
     return db_staff
 
 @router.delete("/{staff_id}/photo", response_model=schemas.Staff)
-def delete_staff_photo(staff_id: int, db: Session = Depends(get_db)):
+def delete_staff_photo(staff_id: str, db: Session = Depends(get_db)):
     db_staff = crud.delete_staff_photo(db=db, staff_id=staff_id, bucket_name=BUCKET_NAME)
     if db_staff is None:
         raise HTTPException(status_code=404, detail="Staff not found")
@@ -53,21 +53,21 @@ def read_staffs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return staffs
 
 @router.get("/{staff_id}", response_model=schemas.Staff)
-def read_staff(staff_id: int, db: Session = Depends(get_db)):
+def read_staff(staff_id: str, db: Session = Depends(get_db)):
     db_staff = crud.get_staff(db, staff_id=staff_id)
     if db_staff is None:
         raise HTTPException(status_code=404, detail="Staff not found")
     return db_staff
 
 @router.put("/{staff_id}", response_model=schemas.Staff)
-def update_staff(staff_id: int, staff: schemas.StaffCreate, db: Session = Depends(get_db)):
+def update_staff(staff_id: str, staff: schemas.StaffCreate, db: Session = Depends(get_db)):
     db_staff = crud.update_staff(db, staff_id=staff_id, staff=staff)
     if db_staff is None:
         raise HTTPException(status_code=404, detail="Staff not found")
     return db_staff
 
 @router.delete("/{staff_id}", response_model=schemas.Staff)
-def delete_staff(staff_id: int, db: Session = Depends(get_db)):
+def delete_staff(staff_id: str, db: Session = Depends(get_db)):
     db_staff = crud.delete_staff(db, staff_id=staff_id)
     if db_staff is None:
         raise HTTPException(status_code=404, detail="Staff not found")
