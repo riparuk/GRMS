@@ -77,7 +77,7 @@ class Request(RequestBase):
     updated_at: datetime
     staffName: Optional[str] = None
     staffImageURL: Optional[Image] = None
-    imageURLs: Optional[List[Image]] = None
+    imageURLs: Optional[List[ImageInRequest]] = None
     notes: Optional[str] = None
     receiveVerifyCompleted: bool
     coordinateActionCompleted: bool

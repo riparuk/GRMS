@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from app.db import crud, schemas
-from ..gcs_utils import upload_to_gcs
+from ..gcs_utils import upload_to_gcs, delete_from_gcs
 from ..dependencies import get_db
 import uuid
 import os
@@ -26,30 +26,53 @@ def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)
 
 @router.post("/{request_id}/images", response_model=List[schemas.Image])
 async def upload_request_images(request_id: int, files: List[UploadFile] = File(...), db: Session = Depends(get_db)):
-    images = []
+    db_request = crud.get_request(db=db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    new_images = []
+    current_image_ids = db_request.imageURLs or []
     for file in files:
         if file.content_type not in ["image/jpeg", "image/png"]:
             raise HTTPException(status_code=400, detail="Invalid file type")
 
         destination_blob_name = f"request_images/{uuid.uuid4()}.{file.filename.split('.')[-1]}"
         public_url = upload_to_gcs(file.file, BUCKET_NAME, destination_blob_name, file.content_type)
-        
+
         db_image = crud.create_image(db=db, image=schemas.ImageCreate(filename=file.filename, url=public_url))
-        images.append(db_image)
+        new_images.append(db_image)
+        current_image_ids.append(db_image.id)
 
-    db_request = crud.get_request(db=db, request_id=request_id)
-    if db_request is None:
-        raise HTTPException(status_code=404, detail="Request not found")
-
-    current_image_ids = db_request.imageURLs or []
-    new_image_ids = [image.id for image in images]
-    current_image_ids.extend(new_image_ids)
     db_request.imageURLs = current_image_ids
-
     db.commit()
     db.refresh(db_request)
+
+    return [schemas.Image.from_orm(image) for image in new_images]
+
+@router.delete("/{request_id}/images/{image_id}", response_model=schemas.Request)
+def delete_request_image(request_id: int, image_id: int, db: Session = Depends(get_db)):
+
+    # Remove reference from request
+    db_request = crud.remove_image_from_request(db=db, request_id=request_id, image_id=image_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Request or Image reference not found in the request")
+
+    # Delete image from the database
+    db_image = crud.delete_image(db=db, image_id=image_id)
+    if db_image is None:
+        raise HTTPException(status_code=404, detail="Image not found")
     
-    return images
+    # Delete image from GCS
+    blob_name = "request_images/"+db_image.url.split("/")[-1]
+    delete_from_gcs(BUCKET_NAME, blob_name)
+
+    # Refresh and convert image URLs
+    if db_request.imageURLs:
+        image_details = crud.get_images_by_id(db=db, ids=db_request.imageURLs)
+        db_request.imageURLs = [schemas.ImageInRequest.from_orm(image) for image in image_details]
+
+    return db_request
+
 
 @router.get("/", response_model=List[schemas.Request])
 def read_requests(
