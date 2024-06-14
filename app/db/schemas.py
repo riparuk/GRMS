@@ -71,7 +71,7 @@ class RequestCreate(RequestBase):
 class Request(RequestBase):
     id: int
     request_message: str
-    assignTo: Optional[int] = None
+    assignTo: Optional[str] = None
     isDone: bool
     created_at: datetime
     updated_at: datetime
