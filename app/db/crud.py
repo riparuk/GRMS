@@ -212,10 +212,10 @@ def update_request_completion_steps(db: Session, request_id: int, step: int):
     
     if step == 1 and not db_request.receiveVerifyCompleted:
         db_request.receiveVerifyCompleted = True
-        db_staff.request_handled += 1
+ 
     elif step == 2 and db_request.receiveVerifyCompleted and not db_request.coordinateActionCompleted:
         db_request.coordinateActionCompleted = True
-        db_staff.request_handled += 1
+        
     elif step == 3 and db_request.receiveVerifyCompleted and db_request.coordinateActionCompleted and not db_request.followUpResolveCompleted:
         db_request.followUpResolveCompleted = True
         db_request.isDone = True
@@ -228,6 +228,18 @@ def update_request_completion_steps(db: Session, request_id: int, step: int):
     db.refresh(db_request)
     db.refresh(db_staff)
     return db_request, None
+
+def remove_image_from_request(db: Session, request_id: int, image_id: int):
+    db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if db_request and db_request.imageURLs:
+        try:
+            db_request.imageURLs.remove(image_id)
+            db.commit()
+            db.refresh(db_request)
+            return db_request
+        except ValueError:
+            return None
+    return None
 
 def create_image(db: Session, image: schemas.ImageCreate):
     db_image = models.Image(filename=image.filename, url=image.url)
@@ -251,9 +263,11 @@ def get_images(db: Session, skip: int = 0, limit: int = 10):
 def delete_image(db: Session, image_id: int):
     db_image = db.query(models.Image).filter(models.Image.id == image_id).first()
     if db_image:
+        db_image_data = schemas.Image.from_orm(db_image)
         db.delete(db_image)
         db.commit()
-    return db_image
+        return db_image_data
+    return None
 
 
 
