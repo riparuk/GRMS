@@ -24,7 +24,7 @@ def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/{request_id}/images", response_model=List[schemas.Image])
+@router.post("/{request_id}/images", response_model=schemas.Request)
 async def upload_request_images(request_id: int, files: List[UploadFile] = File(...), db: Session = Depends(get_db)):
     db_request = crud.get_request(db=db, request_id=request_id)
     if db_request is None:
@@ -47,7 +47,13 @@ async def upload_request_images(request_id: int, files: List[UploadFile] = File(
     db.commit()
     db.refresh(db_request)
 
-    return [schemas.Image.from_orm(image) for image in new_images]
+    # Refresh and convert image URLs
+    if db_request.imageURLs:
+        image_details = crud.get_images_by_id(db=db, ids=db_request.imageURLs)
+        db_request.imageURLs = [schemas.ImageInRequest.from_orm(image) for image in image_details]
+
+    return db_request
+
 
 @router.delete("/{request_id}/images/{image_id}", response_model=schemas.Request)
 def delete_request_image(request_id: int, image_id: int, db: Session = Depends(get_db)):
